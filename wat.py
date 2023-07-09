@@ -1,17 +1,10 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 import time
 
-# Function to send a message on WhatsApp
-def send_whatsapp_message(phone_number, message):
-    # Set Chrome options
-    chrome_options = Options()
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-
+def send_whatsapp_notification(phone_number, message):
     # Launch Chrome
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome()
     driver.get('https://web.whatsapp.com')
     time.sleep(10)  # Wait for QR code scanning
 
@@ -22,21 +15,33 @@ def send_whatsapp_message(phone_number, message):
     search_box.send_keys(Keys.ENTER)
     time.sleep(2)
 
-    # Send the message
+    # Scroll to load previous messages
     message_box = driver.find_element_by_xpath('//div[@contenteditable="true"][@data-tab="6"]')
-    message_box.send_keys(message)
+    for _ in range(4):
+        message_box.send_keys(Keys.PAGE_UP)
+        time.sleep(1)
+
+    # Get the last 200 messages
+    messages = driver.find_elements_by_xpath('//div[contains(@class, "message-in")]//span[contains(@class, "selectable-text")]')
+    messages = messages[-200:]  # Get the last 200 messages
+
+    # Send the notification with the messages
+    notification = f"Notification for {phone_number}\n"
+    for msg in messages:
+        notification += f"- {msg.text}\n"
+
+    # Send the notification message
+    message_box.clear()
+    message_box.send_keys(notification)
     message_box.send_keys(Keys.ENTER)
 
     # Close the browser
     driver.quit()
 
-# Number to send reports to
-phone_number = '+905393855502'
+# Number to send the notification to
+phone_number = "+905304928292"
 
-# Generate and send 100 reports
-for i in range(1, 101):
-    report = f"Report {i} of 100"
-    send_whatsapp_message(phone_number, report)
-    time.sleep(1)  # Pause to avoid getting blocked
+# Send the notification
+send_whatsapp_notification(phone_number, "Reporting the last 200 messages")
 
-print("All reports sent successfully!")
+print("Notification sent successfully!")
